@@ -7,7 +7,7 @@ R&D for LifeR.
 
 ## Upstream credit and contribution boundary
 
-**OrbitTurn is an OSF-developed workflow and set of extensions using other creators' generative-video technology, not an original video-generation model.** The primary production path described here uses [MiniMax's H3 model](https://www.minimaxi.com/) through [ComfyUI](https://github.com/Comfy-Org/ComfyUI); the evaluation also considered upstream LTX, Wan, FlexAM and other independent projects. Those creators retain credit and licensing authority over their own systems.
+**OrbitTurn is an OSF-developed workflow and set of extensions using other creators' generative-video technology, not an original video-generation model.** The primary production path described here uses [MiniMax's H3 model](https://github.com/MiniMax-AI/MiniMax-H3) through [ComfyUI](https://github.com/Comfy-Org/ComfyUI); the evaluation also considered upstream LTX, Wan, FlexAM and other independent projects. Those creators retain credit and licensing authority over their own systems.
 
 OSF's contributions are the shot-specific conditioning approach, integration nodes, orchestration, evaluation and frame-output engineering described below. Neither OSF's MIT licence nor the published workflow redistributes or relicenses upstream models, weights or core software. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for the known rights boundaries and unresolved checks.
 

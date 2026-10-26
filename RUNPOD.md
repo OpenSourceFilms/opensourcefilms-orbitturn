@@ -4,6 +4,27 @@ This was developed and tested on [RunPod](https://runpod.io/) GPU pods.
 Everything in this document reflects the actual working environment as of
 2026-08-19, not a guess.
 
+## Licence checkpoint before downloading or generating
+
+**MiniMax H3 territory restriction:** the
+[original MiniMax H3 Community License](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE)
+expressly excludes the **EU, UK, United States and Republic of Korea**
+and restricts use, distribution and display of **H3-generated Outputs**
+outside its licensed territory. Running a GPU pod in an allowed country
+does **not** by itself clear distribution of a film or generated output
+worldwide. Obtain separate authorization where necessary and review
+the full agreement for commercial, attribution, safeguard and downstream
+conditions. Do not treat public model downloads as blanket permission.
+
+**LTX 2.5** is separately covered by the
+[LTX-2.x Community License](https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2_x),
+including a revenue-related paid-licence threshold for larger entities.
+The [ComfyUI-LTXVideo extension's own licence](https://github.com/Lightricks/ComfyUI-LTXVideo/blob/master/LICENSE)
+is another custom LTX community agreement. Both need checking for the
+exact software and model version. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
+for the October 2026 record; this document is technical setup, **not
+evidence of model-use rights**.
+
 ## GPU
 
 Full-quality H3 generation and the resolution/reference-count parameter

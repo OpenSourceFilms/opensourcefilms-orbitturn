@@ -11,6 +11,25 @@ R&D for LifeR.
 
 OSF's contributions are the shot-specific conditioning approach, integration nodes, orchestration, evaluation and frame-output engineering described below. Neither OSF's MIT licence nor the published workflow redistributes or relicenses upstream models, weights or core software. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for the known rights boundaries and unresolved checks.
 
+## Important H3 and LTX licence limits
+
+MiniMax H3 is **not** under the repository's MIT licence. Its
+[official Community License](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE)
+excludes the **United States, European Union, United Kingdom and Republic
+of Korea** from the standard licensed territory and restricts use and
+display of **model Outputs** outside the permitted territory. This
+potentially affects the international release or exhibition of footage
+generated with H3, even if generation took place in Australia.
+Certain commercial products/services also require written permission,
+prominent MiniMax identification and downstream safeguards.
+
+LTX 2.5 weights and the ComfyUI-LTXVideo extension likewise use
+Lightricks **custom community agreements**, not generic permissive
+open-source licences. See [the checked model and node terms](THIRD_PARTY_LICENSES.md).
+No H3, LTX or other third-party weights are distributed by this repository.
+The GitHub MIT licence applies only to original OSF-authored source; it
+**does not clear any particular film or distribution territory**.
+
 ## Problem
 
 Take a photographed shot — the original camera move, the real scene geometry

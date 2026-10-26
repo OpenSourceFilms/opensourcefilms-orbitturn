@@ -9,9 +9,11 @@ from __future__ import annotations
 import ast
 import binascii
 import json
+import os
 from pathlib import Path
 import struct
 import tempfile
+from types import SimpleNamespace
 import unittest
 import zlib
 
@@ -23,19 +25,82 @@ MAXQ = ROOT / "custom_nodes/osf_h3_maxq/__init__.py"
 WORKFLOW = ROOT / "workflows/OrbitTurn_H3_comparison_workflow.json"
 
 
+class _FakeFolderPaths:
+    root: Path | None = None
+
+    def get_output_directory(self):
+        assert self.root is not None
+        return str(self.root)
+
+
+class _FakeImage:
+    """Synthetic stand-in only for Comfy IMAGE's methods used in save()."""
+    ndim = 4
+
+    def __init__(self, array):
+        self.array = array
+
+    def __getitem__(self, index):
+        return _FakeImage(self.array[index])
+
+    def detach(self):
+        return self
+
+    def to(self, *args, **kwargs):
+        return self
+
+    def numpy(self):
+        return self.array
+
+
+class _FakeLatentPart:
+    def __init__(self, shape):
+        self.shape = shape
+
+    def detach(self):
+        return self
+
+    def to(self, *args, **kwargs):
+        return self
+
+    def contiguous(self):
+        return self
+
+
 def load_png_helpers():
-    """Execute only pure helpers extracted from the actual published source."""
+    """Execute real source helpers and export wrappers with inert dependencies.
+
+    Only AST-selected code is executed. No ComfyUI, GPU, torch, model loading
+    or real safetensors library is imported. Save operations target temp dirs.
+    """
     tree = ast.parse(MAXQ.read_text(encoding="utf-8"), filename=str(MAXQ))
-    selected = [x for x in tree.body
-                if isinstance(x, ast.FunctionDef) and
-                x.name in ("_png_chunk", "_write_png16_rgb")]
-    if len(selected) != 2:
-        raise AssertionError("exactly two named PNG helpers required")
+    funcs = {
+        "_output_path", "_exclusive_write", "_latent_output_path",
+        "_png_output_prefix", "_png_chunk", "_write_png16_rgb",
+    }
+    classes = {"OSFSavePNG16", "OSFH3SaveAVLatent"}
+    selected = [x for x in tree.body if
+                (isinstance(x, ast.FunctionDef) and x.name in funcs)
+                or (isinstance(x, ast.ClassDef) and x.name in classes)]
+    if len(selected) != len(funcs) + len(classes):
+        raise AssertionError("required MaxQ helpers or wrappers absent")
     code = compile(ast.Module(body=selected, type_ignores=[]), str(MAXQ), "exec")
-    scope = {"struct": struct, "binascii": binascii, "zlib": zlib,
-             "Path": Path, "np": np}
+    fake_folder = _FakeFolderPaths()
+    def fake_save_file(tensors, filename, metadata):
+        assert set(tensors) == {"video", "audio"}
+        assert metadata["format"] == "OSF_H3_AV_LATENT"
+        Path(filename).write_bytes(b"SYNTHETIC-CHECKPOINT")
+    scope = {
+        "struct": struct, "binascii": binascii, "zlib": zlib,
+        "Path": Path, "np": np, "os": os, "tempfile": tempfile,
+        "folder_paths": fake_folder,
+        "torch": SimpleNamespace(Tensor=_FakeImage, float32=np.float32),
+        "safetensors": SimpleNamespace(torch=SimpleNamespace(save_file=fake_save_file)),
+        "_av_parts": lambda latent, name: (latent["video"], latent["audio"]),
+        "json": json,
+    }
     exec(code, scope)
-    return scope["_png_chunk"], scope["_write_png16_rgb"]
+    return scope, fake_folder
 
 
 def chunks(data):
@@ -65,9 +130,9 @@ def chunks(data):
 class OrbitTurnOfflineTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        chunk, writer = load_png_helpers()
-        cls.make_chunk = staticmethod(chunk)
-        cls.write_png = staticmethod(writer)
+        cls.maxq, cls.fake_folder = load_png_helpers()
+        cls.make_chunk = staticmethod(cls.maxq["_png_chunk"])
+        cls.write_png = staticmethod(cls.maxq["_write_png16_rgb"])
 
     def test_both_custom_node_modules_parse(self):
         for module in (HYBRID, MAXQ):
@@ -132,6 +197,86 @@ class OrbitTurnOfflineTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "RGB"):
                         self.write_png(Path(td) / "bad.png",
                                        np.zeros(shape, dtype=np.uint16), 6)
+
+    def test_png16_export_is_create_only_without_truncating_previous_frame(self):
+        old = np.full((2, 3, 3), 12345, dtype=np.uint16)
+        new = np.full((2, 3, 3), 54321, dtype=np.uint16)
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "frame.png"
+            self.write_png(path, old, 6)
+            original = path.read_bytes()
+            with self.assertRaises(FileExistsError):
+                self.write_png(path, new, 6)
+            self.assertEqual(path.read_bytes(), original)
+            self.assertEqual(list(Path(td).glob(".osf-maxq-*.tmp")), [])
+
+    def test_maxq_output_paths_reject_escape_and_symlinked_parent(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "comfy-output"
+            outside = Path(td) / "outside"
+            root.mkdir()
+            outside.mkdir()
+            self.fake_folder.root = root
+            output_path = self.maxq["_latent_output_path"]
+            prefix_path = self.maxq["_png_output_prefix"]
+            for get in (output_path, prefix_path):
+                for raw in ("../outside/malicious", str(outside / "malicious"),
+                            "safe/../../outside/malicious"):
+                    with self.subTest(fn=get.__name__, path=raw):
+                        with self.assertRaisesRegex(ValueError, "output filename"):
+                            get(raw)
+                (root / "escape").symlink_to(outside, target_is_directory=True)
+                with self.assertRaisesRegex(ValueError, "escapes"):
+                    get("escape/unwanted")
+                (root / "escape").unlink()
+            self.assertEqual(
+                output_path("inside/checkpoint").parent, root / "inside"
+            )
+            self.assertEqual(
+                output_path(str(root / "inside" / "checkpoint")).name,
+                "checkpoint.safetensors",
+            )
+            self.assertEqual(prefix_path("inside/frames").name, "frames")
+            self.assertFalse((outside / "malicious").exists())
+
+    def test_png_save_wrapper_uses_contained_create_only_publication(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "output"
+            root.mkdir()
+            self.fake_folder.root = root
+            images = _FakeImage(np.full((1, 3, 4, 3), 0.5, dtype=np.float32))
+            node = self.maxq["OSFSavePNG16"]()
+            report = node.save(images, "PassB/frames/test", 6)[0]
+            path = root / "PassB/frames/test_00000.png"
+            self.assertIn(str(path), report)
+            baseline = path.read_bytes()
+            with self.assertRaises(FileExistsError):
+                node.save(images, "PassB/frames/test", 6)
+            self.assertEqual(path.read_bytes(), baseline)
+            with self.assertRaisesRegex(ValueError, "output filename"):
+                node.save(images, "../not-allowed", 6)
+            self.assertEqual(list(root.rglob(".osf-maxq-*.tmp")), [])
+
+    def test_av_checkpoint_wrapper_uses_contained_create_only_publication(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "output"
+            root.mkdir()
+            self.fake_folder.root = root
+            latent = {
+                "video": _FakeLatentPart((1, 24, 2, 3, 4)),
+                "audio": _FakeLatentPart((1, 32, 2, 3)),
+            }
+            node = self.maxq["OSFH3SaveAVLatent"]()
+            _, path = node.save(latent, "PassA/latent")
+            target = root / "PassA/latent.safetensors"
+            self.assertEqual(path, str(target))
+            self.assertEqual(target.read_bytes(), b"SYNTHETIC-CHECKPOINT")
+            with self.assertRaises(FileExistsError):
+                node.save(latent, "PassA/latent")
+            self.assertEqual(target.read_bytes(), b"SYNTHETIC-CHECKPOINT")
+            with self.assertRaisesRegex(ValueError, "output filename"):
+                node.save(latent, "../escape")
+            self.assertEqual(list(root.rglob(".osf-maxq-*.tmp")), [])
 
     def test_gui_workflow_nodes_links_and_slots(self):
         data = json.loads(WORKFLOW.read_text(encoding="utf-8"))

@@ -4,6 +4,7 @@ import binascii
 import json
 import os
 import struct
+import tempfile
 import zlib
 from pathlib import Path
 
@@ -34,18 +35,60 @@ def _av_parts(latent, name="latent"):
     return video, audio
 
 
+def _output_path(filename: str, default: str, suffix: str = "") -> Path:
+    """Resolve a MaxQ output under ComfyUI's configured output directory.
+
+    Absolute paths *inside* the output root remain supported. A custom prefix
+    must not escape the output tree via absolute paths, '..', or existing
+    parent-directory symlinks. This is not an openat-style adversarial race
+    defence: the output tree must remain under the ComfyUI operator's control.
+    """
+    if not isinstance(filename, str):
+        raise ValueError("output filename must be a string")
+    raw = filename.strip() or default
+    if suffix and not raw.lower().endswith(suffix):
+        raw += suffix
+    requested = Path(raw)
+    if ".." in requested.parts:
+        raise ValueError("output filename must not contain '..' path components")
+    root = Path(folder_paths.get_output_directory()).resolve(strict=True)
+    target = requested if requested.is_absolute() else root / requested
+    parent = target.parent.resolve(strict=False)
+    if not parent.is_relative_to(root):
+        raise ValueError("output filename escapes ComfyUI output directory")
+    parent.mkdir(parents=True, exist_ok=True)
+    parent = parent.resolve(strict=True)
+    if not parent.is_relative_to(root):
+        raise ValueError("output filename escapes ComfyUI output directory")
+    return parent / target.name
+
+
+def _exclusive_write(path: Path, writer) -> None:
+    """Write a same-directory temp and publish by create-only hard link.
+
+    An existing destination (even a symlink) raises FileExistsError. The
+    published file is complete before its name becomes visible to readers.
+    """
+    fd, temp_name = tempfile.mkstemp(prefix=".osf-maxq-", suffix=".tmp", dir=str(path.parent))
+    os.close(fd)
+    temp = Path(temp_name)
+    try:
+        writer(temp)
+        os.link(temp, path, follow_symlinks=False)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
 def _latent_output_path(filename_prefix: str) -> Path:
-    filename_prefix = (filename_prefix or "OrbitTurn_H3_MAXQ/passA/OrbitTurn_PASS_A").strip()
-    if filename_prefix.lower().endswith(".safetensors"):
-        rel = Path(filename_prefix)
-    else:
-        rel = Path(filename_prefix + ".safetensors")
-    if rel.is_absolute():
-        path = rel
-    else:
-        path = Path(folder_paths.get_output_directory()) / rel
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return path
+    return _output_path(
+        filename_prefix, "OrbitTurn_H3_MAXQ/passA/OrbitTurn_PASS_A", ".safetensors"
+    )
+
+
+def _png_output_prefix(filename_prefix: str) -> Path:
+    return _output_path(
+        filename_prefix, "OrbitTurn_H3_MAXQ/PassB/frames16/h3"
+    )
 
 
 def _latent_input_path(filename: str) -> Path:
@@ -98,7 +141,9 @@ class OSFH3SaveAVLatent:
             "video_shape": json.dumps(list(video.shape)),
             "audio_shape": json.dumps(list(audio.shape)),
         }
-        safetensors.torch.save_file(tensors, str(path), metadata=metadata)
+        _exclusive_write(
+            path, lambda temp: safetensors.torch.save_file(tensors, str(temp), metadata=metadata)
+        )
         return (latent, str(path))
 
 
@@ -242,7 +287,7 @@ def _write_png16_rgb(path: Path, rgb_u16: np.ndarray, compression: int):
         + _png_chunk(b"IDAT", payload)
         + _png_chunk(b"IEND", b"")
     )
-    path.write_bytes(png)
+    _exclusive_write(path, lambda temp: temp.write_bytes(png))
 
 
 class OSFSavePNG16:
@@ -267,8 +312,7 @@ class OSFSavePNG16:
     def save(self, images, filename_prefix, compression):
         if not isinstance(images, torch.Tensor) or images.ndim != 4:
             raise ValueError("images must be Comfy IMAGE [N,H,W,C]")
-        prefix = Path(folder_paths.get_output_directory()) / filename_prefix
-        prefix.parent.mkdir(parents=True, exist_ok=True)
+        prefix = _png_output_prefix(filename_prefix)
 
         arr = images[..., :3].detach().to("cpu", dtype=torch.float32).numpy()
         arr = np.clip(arr, 0.0, 1.0)

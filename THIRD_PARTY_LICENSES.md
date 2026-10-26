@@ -25,20 +25,35 @@ ComfyUI environment (2026-07-22 and 2026-08-19 passes):
 | ComfyUI-RMBG | github.com/1038lab/ComfyUI-RMBG | GPL-3.0 | Permitted. |
 | ComfyUI-Manager | github.com/Comfy-Org/ComfyUI-Manager | GPL-3.0 | Permitted. |
 
-## Not yet verified
+## Additional upstream terms verified 26 October 2026
 
-Checked as of 2026-08-19 (a `ds_research` pass found no definitive license
-text for any of these — see note below); do not assume permissive or
-commercial-safe until someone actually reads the terms:
+The entries below replace the earlier August 2026 *unverified* guesses.
+These are upstream contract readings, **not a clearance of any particular
+production, model distribution, user location or film release**.
 
-| Component | Upstream | What's known | Open question |
-|---|---|---|---|
-| ComfyUI-LTXVideo | github.com/Lightricks/ComfyUI-LTXVideo | A `LICENSE`/`LICENSE.md` exists in Lightricks' `LTX-2` repo (contents not read). | Exact license text; whether it covers the ComfyUI node package specifically. |
-| LTX 2.5 model weights | huggingface.co (Lightricks) | Gated download, requires accepting Hugging Face model terms. | What those terms actually permit commercially. |
-| MiniMax H3 model weights | huggingface.co/Comfy-Org/MiniMax-H3, repackaged from huggingface.co/MiniMaxAI/MiniMax-H3 and huggingface.co/lightx2v/Minimax-h3-Turbo | ComfyUI's own docs describe it as "open weights." | "Open weights" is not itself a license; exact terms and commercial-use permission unread. |
-| Bernini-R model weights | (native ComfyUI core support, `comfy_extras/nodes_bernini.py`) | Nothing found — no license, terms, or even a clear upstream project page turned up. | Everything. |
-| SageAttention | PyPI `sageattention` | Used for optional inference acceleration; version 2.2.0 installed in the working environment. | License/terms not checked. |
-| comfyui-mickmumpitz-nodes | (installed without a git remote in the working environment; upstream not confirmed) | Provides camera-tracking-adjacent nodes (`VideoToTrackingPredict`/`VideoToTrackingVisualizeAll`) used in the comparison workflow. | Upstream repo, license — not confirmed. |
+| Component | Authoritative source and rights | Important conditions |
+|---|---|---|
+| **MiniMax H3 original model weights** | [MiniMaxAI/MiniMax-H3 official Community License](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE), dated 2 August 2026. A **custom, geographically restricted agreement**, not Apache, MIT or an OSI-approved licence. | Section I excludes **European Union, United Kingdom, Republic of Korea and United States of America** from the Applicable Territory. Section V.4 prohibits use, reproduction, modification, distribution or display of the model **or its Outputs** outside that territory, unless separate authorization is obtained. Australia is not expressly excluded. **This is a serious restriction for international distribution or display of H3-generated footage**, not just model hosting. |
+| **MiniMax H3 commercial and redistribution terms** | [Same original licence](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE), §§III–V, VI. | Commercial products/services generating **more than USD 20 million annual revenue** require prior written authorization; commercial UIs using H3 must prominently identify MiniMax H3. Distributors of model works must preserve the agreement and required NOTICE, and downstream services have safeguard and restricted-use obligations. The licence says MiniMax claims no ownership of generated Outputs, but **still contractually restricts their use outside the Applicable Territory**. Check the complete text and any separate approval. |
+| **LTX 2.5 weights** | [Lightricks LTX-2.x Community License](https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2_x), not a standard permissive software license; assess the actual checkpoint/version and accepted terms. | Entities with **at least USD 10 million annual revenue** generally need a paid agreement for uses outside specified non-commercial purposes. Below that threshold is **not unconditional public-domain or Apache use**; the agreement also has other contractual conditions. |
+| **ComfyUI-LTXVideo code** | [Lightricks/ComfyUI-LTXVideo's own LICENSE](https://github.com/Lightricks/ComfyUI-LTXVideo/blob/master/LICENSE), titled **LTX-2 Community License Agreement**, 5 January 2026. | This custom agreement is **distinct from the LTX-2.x model-weights agreement**, and is not Apache/MIT merely because other ComfyUI nodes are. Check both installed node version and checkpoint terms separately. |
+| **SageAttention source** | [thu-ml/SageAttention/LICENSE](https://github.com/thu-ml/SageAttention/blob/main/LICENSE), Apache-2.0. | The repository source license is permissive; third-party binary-wheel components, if redistributed, may have additional notices. Nothing from SageAttention is vendored here. |
+
+**Model-hosting geography is not the only question.** The MiniMax H3
+agreement expressly covers use and display of Outputs, so a film or public
+demo containing H3-generated footage distributed internationally requires
+specific legal review, even when the footage was generated in Australia.
+No model weights or H3 outputs are included in this GitHub repository.
+If distribution in an excluded territory is contemplated, seek MiniMax's
+written licence or legal advice before relying on this community licence.
+
+## Still not independently verified
+
+| Component | What is known | Remaining rights question |
+|---|---|---|
+| Bernini-R model weights | ComfyUI core exposes `comfy_extras/nodes_bernini.py`, but the exact upstream model/weight grant was not established. | Identify official checkpoint and read its own licence. |
+| comfyui-mickmumpitz-nodes | Camera-tracking-related third-party nodes were present in the historical environment without a verified upstream Git remote. | Identify upstream author and licence for the exact installed package. |
+| MiniMax H3 repack/turbo variants | Comfy-Org and lightx2v distribute variants; MiniMaxAI is the official original model. | Verify whether particular repack/checkpoint adds obligations beyond the original agreement and whether any separate authority applies. |
 
 ## How this list was produced
 
@@ -46,9 +61,7 @@ The "Verified" table reuses confirmed findings from Open Source Films'
 existing ComfyUI licensing audit (the same one behind
 [`opensourcefilms-comfyui-workflows`](https://github.com/OpenSourceFilms/opensourcefilms-comfyui-workflows)'s
 own `THIRD_PARTY_LICENSES.md`), since several packages are shared across
-both projects' environments. The "Not yet verified" table is new to this
-repository and reflects an actual research attempt (three real pages
-fetched: Lightricks' `LTX-2` GitHub repo, ComfyUI's own MiniMax H3 tutorial
-page, and the `Comfy-Org/MiniMax-H3` Hugging Face repo) that came back
-without definitive license text rather than a guess — see the individual
-"What's known" cells for exactly what those pages did and didn't say.
+both projects' environments. The original August 2026 audit could not determine rights for several
+models. The 26 October 2026 update reads the linked **official upstream
+licence files** directly and moves confirmed terms out of that unverified
+list. It does not replace review of the checkpoint or service actually used.

@@ -38,6 +38,8 @@ production, model distribution, user location or film release**.
 | **LTX 2.5 weights** | [Lightricks LTX-2.x Community License](https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2_x), not a standard permissive software license; assess the actual checkpoint/version and accepted terms. | Entities with **at least USD 10 million annual revenue** generally need a paid agreement for uses outside specified non-commercial purposes. Below that threshold is **not unconditional public-domain or Apache use**; the agreement also has other contractual conditions. |
 | **ComfyUI-LTXVideo code** | [Lightricks/ComfyUI-LTXVideo's own LICENSE](https://github.com/Lightricks/ComfyUI-LTXVideo/blob/master/LICENSE), titled **LTX-2 Community License Agreement**, 5 January 2026. | This custom agreement is **distinct from the LTX-2.x model-weights agreement**, and is not Apache/MIT merely because other ComfyUI nodes are. Check both installed node version and checkpoint terms separately. |
 | **SageAttention source** | [thu-ml/SageAttention/LICENSE](https://github.com/thu-ml/SageAttention/blob/main/LICENSE), Apache-2.0. | The repository source license is permissive; third-party binary-wheel components, if redistributed, may have additional notices. Nothing from SageAttention is vendored here. |
+| **Bernini-R upstream code and original model weights** | ByteDance's [Bernini source](https://github.com/bytedance/Bernini/blob/main/LICENSE) includes Apache-2.0; the [official ByteDance/Bernini-R model card](https://huggingface.co/ByteDance/Bernini-R) also declares **Apache-2.0** for the released renderer weights. The [Comfy-Org/Bernini-R repack](https://huggingface.co/Comfy-Org/Bernini-R) declares Apache-2.0 and identifies ByteDance as its base. | Upstream licensing is now identified. This is **not** verification of the historical on-disk checkpoint hash, exact quantization, third-party models bundled alongside it, or the precise variant installed in ComfyUI. |
+| **Mickmumpitz ComfyUI node repository** | [mickmumpitz/ComfyUI-Mickmumpitz-Nodes](https://github.com/mickmumpitz/ComfyUI-Mickmumpitz-Nodes), [MIT LICENSE](https://github.com/mickmumpitz/ComfyUI-Mickmumpitz-Nodes/blob/main/LICENSE), Copyright (c) 2025 MickMumpitz. | The upstream author and source licence are identified. Exact historical installed tree/commit and the presence/licence of the particular camera-tracking node versions are **not independently established**; third-party model dependencies require separate checks. |
 
 **Model-hosting geography is not the only question.** The MiniMax H3
 agreement expressly covers use and display of Outputs, so a film or public
@@ -51,8 +53,6 @@ written licence or legal advice before relying on this community licence.
 
 | Component | What is known | Remaining rights question |
 |---|---|---|
-| Bernini-R model weights | ComfyUI core exposes `comfy_extras/nodes_bernini.py`, but the exact upstream model/weight grant was not established. | Identify official checkpoint and read its own licence. |
-| comfyui-mickmumpitz-nodes | Camera-tracking-related third-party nodes were present in the historical environment without a verified upstream Git remote. | Identify upstream author and licence for the exact installed package. |
 | MiniMax H3 repack/turbo variants | Comfy-Org and lightx2v distribute variants; MiniMaxAI is the official original model. | Verify whether particular repack/checkpoint adds obligations beyond the original agreement and whether any separate authority applies. |
 
 ## How this list was produced

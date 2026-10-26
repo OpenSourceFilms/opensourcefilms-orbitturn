@@ -1,0 +1,32 @@
+name: OrbitTurn offline source and PNG acceptance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/offline-acceptance.yml"
+      - "tests/**"
+      - "custom_nodes/**"
+      - "workflows/**"
+      - "README.md"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout public source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Python 3.11
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.11"
+      - name: Install CPU-only test dependency
+        run: python -m pip install --disable-pip-version-check numpy==1.26.4
+      - name: Run source, PNG16 and graph structure tests
+        run: python -B -m unittest discover -s tests -p 'test_public_orbitturn_offline.py' -v

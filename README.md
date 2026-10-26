@@ -93,6 +93,29 @@ SageAttention on/off) were run against this shot between 2026-08-15 and
 2026-08-19; that tuning experience is reflected in the defaults in the two
 node packages, not published as raw data here.
 
+## Offline reproducibility checks
+
+The public repository includes [eight CPU-only regression tests](tests/test_public_orbitturn_offline.py)
+run automatically by [GitHub Actions](.github/workflows/offline-acceptance.yml).
+These checks use small synthetic 16-bit RGB images to exercise the **exact**
+published `_png_chunk` and `_write_png16_rgb` helpers from the MaxQ node
+module, verifying PNG signature, IHDR, CRC, big-endian sample bytes,
+compression and invalid input rejection. The checks also parse both custom
+node modules and inspect the 220-node, 280-link saved UI graph for valid
+node IDs and link endpoints.
+
+The PNG helpers are extracted from the published source by Python's AST
+rather than importing ComfyUI, torch or safetensors. NumPy is the only runtime
+test dependency. This deliberately tests **serialization logic**, not the
+live MaxQ ComfyUI wrapper or any H3 generation.
+
+The test also confirms the saved UI graph still uses **stock H3**, not OSF's
+later hybrid/MaxQ nodes. This is the historical documentation gap described
+above, not an assertion of working end-to-end MaxQ wiring. A passing run
+does not establish node compatibility with current ComfyUI, usable model
+weights, successful inference, temporal consistency, or production
+quality. No production frames or latent checkpoints are needed.
+
 ## Runpod
 
 Development and testing run on [RunPod](https://runpod.io/) GPU pods. See
